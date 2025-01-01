@@ -39,3 +39,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+restaurant-table-booking-7fe4e-firebase-adminsdk-zhnhs-2ef5677812.json
