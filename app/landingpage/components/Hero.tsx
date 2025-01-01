@@ -32,7 +32,7 @@ export function Hero() {
                     Discover our exquisite menu, unparalleled service, and the perfect ambiance for every occasion. Reserve your table now to enjoy a memorable dining experience.
                 </p>
                 <Button asChild size="lg" className="bg-red-600 hover:bg-red-700">
-                    <Link href={isAuthenticated ? '/dashboard' : '/login'} className="inline-flex items-center">
+                    <Link href={isAuthenticated ? '/dashboard' : '/auth/login'} className="inline-flex items-center">
                         {isAuthenticated ? 'Go to Dashboard' : 'Get Started'} <ArrowRight className="ml-2" />
                     </Link>
                 </Button>
