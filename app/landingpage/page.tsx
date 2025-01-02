@@ -1,4 +1,3 @@
-import { Navbar } from '../components/NavBar'
 import { Hero } from './components/Hero'
 import { About } from './components/About'
 import { Features } from './components/Features'
@@ -8,8 +7,7 @@ import { Footer } from './components/Footer'
 
 export default function LandingPage() {
     return (
-        <div className="min-h-screen flex flex-col">
-            <Navbar />
+        <div className="min-h-screen flex flex-col" id = 'home'>
             <Hero />
             <About />
             <Features />

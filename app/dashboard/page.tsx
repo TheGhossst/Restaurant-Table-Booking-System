@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import RestaurantSearch from './components/restaurant-search';
-import { Navbar } from '../components/NavBar';
 import { auth } from '../../api/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
+import { Loading } from '../components/Loading';
 
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -26,7 +26,7 @@ export default function DashboardPage() {
   }, [router]);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Loading />
   }
 
   if (!user) {
@@ -34,12 +34,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <div>
-      <Navbar />
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">Find a Restaurant</h1>
-        <RestaurantSearch />
-      </div>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-8">Find a Restaurant</h1>
+      <RestaurantSearch />
     </div>
   );
 }

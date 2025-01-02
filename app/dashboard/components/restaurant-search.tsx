@@ -8,9 +8,11 @@ import { RestaurantList } from "./restaurant-list";
 import { Restaurant } from "../types/types";
 import { db } from "../../../api/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
+import { Search, MapPin } from 'lucide-react';
 
 export default function RestaurantSearch() {
     const [location, setLocation] = useState("");
+    const [restaurantName, setRestaurantName] = useState("");
     const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
     const [locations, setLocations] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
@@ -39,15 +41,26 @@ export default function RestaurantSearch() {
         setError(null);
 
         try {
-            const q = query(collection(db, "restaurants"), where("location", "==", location));
-            const querySnapshot = await getDocs(q);
+            const restaurantsCollection = collection(db, "restaurants");
+            let locationQuerySnapshot;
+            if (location.trim()) {
+                const locationQuery = query(restaurantsCollection, where("location", "==", location));
+                locationQuerySnapshot = await getDocs(locationQuery);
+            } else {
+                locationQuerySnapshot = await getDocs(restaurantsCollection);
+            }
 
-            const fetchedRestaurants: Restaurant[] = querySnapshot.docs.map((doc) => ({
+            const fetchedRestaurants: Restaurant[] = locationQuerySnapshot.docs.map((doc) => ({
                 id: doc.id,
                 ...doc.data(),
             })) as Restaurant[];
 
-            setRestaurants(fetchedRestaurants);
+            // Perform client-side filtering for partial name matches
+            const filteredRestaurants = fetchedRestaurants.filter((restaurant) =>
+                restaurant.name.toLowerCase().includes(restaurantName.toLowerCase())
+            );
+
+            setRestaurants(filteredRestaurants);
         } catch (err) {
             console.error("Error fetching restaurants:", err);
             setError("Failed to fetch restaurants. Please try again.");
@@ -62,23 +75,36 @@ export default function RestaurantSearch() {
     };
 
     return (
-        <div>
-            <form onSubmit={handleSearch} className="mb-8">
-                <div className="flex gap-4">
-                    <Input
-                        type="text"
-                        placeholder="Enter location"
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        className="flex-grow"
-                    />
-                    <Button type="submit" disabled={loading}>
+        <div className="space-y-8">
+            <form onSubmit={handleSearch} className="space-y-4">
+                <div className="flex flex-col md:flex-row gap-4">
+                    <div className="relative flex-grow">
+                        <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <Input
+                            type="text"
+                            placeholder="Enter location"
+                            value={location}
+                            onChange={(e) => setLocation(e.target.value)}
+                            className="pl-10"
+                        />
+                    </div>
+                    <div className="relative flex-grow">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <Input
+                            type="text"
+                            placeholder="Enter restaurant name"
+                            value={restaurantName}
+                            onChange={(e) => setRestaurantName(e.target.value)}
+                            className="pl-10"
+                        />
+                    </div>
+                    <Button type="submit" disabled={loading} className="w-full md:w-auto">
                         {loading ? "Searching..." : "Search"}
                     </Button>
                 </div>
             </form>
 
-            <div className="mb-8">
+            <div>
                 <h2 className="text-lg font-semibold mb-2">Available Locations:</h2>
                 <div className="flex flex-wrap gap-2">
                     {locations.length > 0 ? (
@@ -93,13 +119,18 @@ export default function RestaurantSearch() {
                             </Badge>
                         ))
                     ) : (
-                        <p>Loading locations...</p>
+                        <p className="text-gray-500 italic">Loading locations...</p>
                     )}
                 </div>
             </div>
 
             {error && <p className="text-red-500 mb-4">{error}</p>}
-            <RestaurantList restaurants={restaurants} />
+
+            {restaurants.length > 0 ? (
+                <RestaurantList restaurants={restaurants} />
+            ) : (
+                <p className="text-center text-gray-500 italic">No restaurants found. Try adjusting your search criteria.</p>
+            )}
         </div>
     );
 }

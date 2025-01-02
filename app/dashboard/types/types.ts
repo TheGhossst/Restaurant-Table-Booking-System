@@ -7,6 +7,7 @@ export interface Restaurant {
     status: "busy" | "free"
     description?: string
     image: string
+    location: string
 }
 
 

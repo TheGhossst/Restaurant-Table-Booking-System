@@ -2,21 +2,23 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Menu, X, UtensilsCrossed } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { smoothScroll } from '../utils/smoothScroll';
 import { auth } from '@/api/firebase';
 import { onAuthStateChanged, signOut, User } from 'firebase/auth';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 
 const navItems = [
-    { href: '/', label: 'Home' },
+    {href: '#home', label : 'Home' },
     { href: '#about', label: 'About' },
     { href: '#contact', label: 'Contact' },
 ];
 
 export function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
+    const pathname = usePathname();
 
     const toggleMenu = () => setIsOpen(!isOpen);
 
@@ -29,11 +31,10 @@ export function Navbar() {
                             <UtensilsCrossed className="w-6 h-6 mr-2 text-gray-700" />
                             Findymfirst
                         </Link>
-
                     </div>
                     <div className="hidden md:block">
                         <div className="ml-10 flex items-center space-x-4">
-                            <NavItems />
+                            {pathname === '/' && <NavItems />}
                             <AuthButtons />
                         </div>
                     </div>
@@ -57,7 +58,7 @@ export function Navbar() {
             {isOpen && (
                 <div className="md:hidden">
                     <div className="px-2 pt-2 pb-3 space-y-1">
-                        <NavItems mobile />
+                        {pathname === '/' && <NavItems mobile />}
                         <div className="mt-4">
                             <AuthButtons mobile />
                         </div>
@@ -76,24 +77,14 @@ function NavItems({ mobile = false }: { mobile?: boolean }) {
     return (
         <>
             {navItems.map((item) => (
-                item.href.startsWith('#') ? (
-                    <a
-                        key={item.href}
-                        href={item.href}
-                        className={`${baseClasses} ${mobile ? mobileClasses : desktopClasses}`}
-                        onClick={(e) => smoothScroll(e, item.href.slice(1))}
-                    >
-                        {item.label}
-                    </a>
-                ) : (
-                    <Link
-                        key={item.href}
-                        href={item.href}
-                        className={`${baseClasses} ${mobile ? mobileClasses : desktopClasses}`}
-                    >
-                        {item.label}
-                    </Link>
-                )
+                <a
+                    key={item.href}
+                    href={item.href}
+                    className={`${baseClasses} ${mobile ? mobileClasses : desktopClasses}`}
+                    onClick={(e) => smoothScroll(e, item.href.slice(1))}
+                >
+                    {item.label}
+                </a>
             ))}
         </>
     );
@@ -101,6 +92,7 @@ function NavItems({ mobile = false }: { mobile?: boolean }) {
 
 function AuthButtons({ mobile = false }: { mobile?: boolean }) {
     const [user, setUser] = useState<User | null>(null);
+    const router = useRouter();
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -110,19 +102,15 @@ function AuthButtons({ mobile = false }: { mobile?: boolean }) {
         return () => unsubscribe();
     }, []);
 
-
-
     const handleLogout = async () => {
-        const router = useRouter();
         try {
             await signOut(auth);
             setUser(null);
+            router.push("/");
         } catch (error) {
             console.error('Error logging out:', error);
-            router.push("/");
         }
     };
-
 
     return (
         <div className={`${mobile ? 'flex flex-col space-y-2' : 'flex items-center space-x-2'}`}>
