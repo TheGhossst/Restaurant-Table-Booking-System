@@ -1,9 +1,38 @@
 'use client'
 
-import RestaurantSearch from "./components/restaurant-search";
-import { Navbar } from '../components/NavBar'
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import RestaurantSearch from './components/restaurant-search';
+import { Navbar } from '../components/NavBar';
+import { auth } from '../../api/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
 
 export default function DashboardPage() {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (!currentUser) {
+        router.push('/auth/login');
+      } else {
+        setUser(currentUser);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [router]);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user) {
+    return null;
+  }
+
   return (
     <div>
       <Navbar />

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { smoothScroll } from '../utils/smoothScroll';
 import { auth } from '@/api/firebase';
 import { onAuthStateChanged, signOut, User } from 'firebase/auth';
+import { useRouter } from 'next/router';
 
 const navItems = [
     { href: '/', label: 'Home' },
@@ -109,14 +110,19 @@ function AuthButtons({ mobile = false }: { mobile?: boolean }) {
         return () => unsubscribe();
     }, []);
 
+
+
     const handleLogout = async () => {
+        const router = useRouter();
         try {
             await signOut(auth);
             setUser(null);
         } catch (error) {
             console.error('Error logging out:', error);
+            router.push("/");
         }
     };
+
 
     return (
         <div className={`${mobile ? 'flex flex-col space-y-2' : 'flex items-center space-x-2'}`}>
