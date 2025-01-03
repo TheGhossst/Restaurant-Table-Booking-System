@@ -7,7 +7,7 @@ import { db } from '@/api/firebase'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Calendar, Clock, MapPin, ArrowRight } from 'lucide-react'
-import { Skeleton } from '@/components/ui/skeleton'
+import { Loading } from '@/app/components/Loading'
 
 interface Restaurant {
     id: string
@@ -56,25 +56,7 @@ export function ReservationList({ reservations }: ReservationListProps) {
         enrichReservations()
     }, [reservations])
 
-    if (loading) {
-        return (
-            <div className="space-y-4">
-                {[...Array(3)].map((_, i) => (
-                    <Card key={i}>
-                        <CardContent className="p-6">
-                            <div className="flex items-center space-x-4">
-                                <Skeleton className="h-12 w-12 rounded-full" />
-                                <div className="space-y-2">
-                                    <Skeleton className="h-4 w-[250px]" />
-                                    <Skeleton className="h-4 w-[200px]" />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
-        )
-    }
+    if (loading) return <Loading />
 
     return (
         <div className="space-y-4">

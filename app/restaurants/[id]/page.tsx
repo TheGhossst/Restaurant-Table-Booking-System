@@ -18,13 +18,14 @@ import { useRouter } from 'next/navigation'
 import {
     AlertDialog,
     AlertDialogAction,
-    AlertDialogCancel,
     AlertDialogContent,
     AlertDialogDescription,
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Loading } from '@/app/components/Loading'
+import { NotFound } from '@/app/components/Error'
 
 export default function RestaurantPage() {
     const { id } = useParams()
@@ -121,15 +122,15 @@ export default function RestaurantPage() {
         }
     }
 
-    if (loading) return <div className="flex justify-center items-center min-h-screen">Loading...</div>
+    if (loading) return <Loading />
     if (error) return <div className="flex justify-center items-center min-h-screen text-red-500">Error: {error}</div>
-    if (!restaurant) return <div className="flex justify-center items-center min-h-screen">Restaurant not found</div>
+    if (!restaurant) return <NotFound  item = 'resturant'/>
 
     const today = format(new Date(), 'EEEE').toLowerCase()
     const currentHours = restaurant.openingHours[today]
 
     return (
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8 ">
             <Card className="mt-16 mb-8">
                 <div className="h-64 overflow-hidden">
                     <img src={restaurant.image} alt={restaurant.name} className="w-full h-full object-cover" />
