@@ -10,10 +10,30 @@ import { auth } from '@/api/firebase';
 import { onAuthStateChanged, signOut, User } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
-const navItems = [
-    {href: '#home', label : 'Home' },
+interface NavItem {
+    href: string;
+    label: string;
+}
+
+// Static Nav Items
+const navItemsForRoot: NavItem[] = [
+    { href: '#home', label: 'Home' },
     { href: '#about', label: 'About' },
     { href: '#contact', label: 'Contact' },
+];
+
+const navItemsForDashboard: NavItem[] = [
+    { href: '/', label: 'Home' }
+];
+
+const navItemsForRestaurant: NavItem[] = [
+    { href: '/', label: 'Home' },
+    { href: '/dashboard', label: 'Dashboard' }
+];
+
+const navItemsForReservation: NavItem[] = [
+    { href: '/', label: 'Home' },
+    { href: '/dashboard', label: 'Dashboard' }
 ];
 
 export function Navbar() {
@@ -21,6 +41,26 @@ export function Navbar() {
     const pathname = usePathname();
 
     const toggleMenu = () => setIsOpen(!isOpen);
+
+    const getBasePath = () => {
+        const segments = pathname.split('/').filter(Boolean);
+        return segments.length > 0 ? segments[0] : '/';
+    };
+
+    const basePath = getBasePath();
+
+    const renderNavItems = () => {
+        switch (basePath) {
+            case 'dashboard':
+                return <NavItemsForDashBoard mobile={false} navItems={navItemsForDashboard} />;
+            case 'restaurants':
+                return <NavItemsForResturant mobile={false} navItems={navItemsForRestaurant} />;
+            case 'reservation':
+                return <NavItemsForReservation mobile={false} navItems={navItemsForReservation} />;
+            default:
+                return <NavItems mobile={false} navItems={navItemsForRoot} />;
+        }
+    };
 
     return (
         <nav className="bg-white shadow-md fixed w-full z-10">
@@ -34,7 +74,7 @@ export function Navbar() {
                     </div>
                     <div className="hidden md:block">
                         <div className="ml-10 flex items-center space-x-4">
-                            {pathname === '/' && <NavItems />}
+                            {renderNavItems()}
                             <AuthButtons />
                         </div>
                     </div>
@@ -58,7 +98,7 @@ export function Navbar() {
             {isOpen && (
                 <div className="md:hidden">
                     <div className="px-2 pt-2 pb-3 space-y-1">
-                        {pathname === '/' && <NavItems mobile />}
+                        {renderNavItems()}
                         <div className="mt-4">
                             <AuthButtons mobile />
                         </div>
@@ -69,7 +109,8 @@ export function Navbar() {
     );
 }
 
-function NavItems({ mobile = false }: { mobile?: boolean }) {
+// General NavItems Component
+function NavItems({ mobile = false, navItems }: { mobile?: boolean, navItems: NavItem[] }) {
     const baseClasses = "text-gray-700 hover:text-black transition-colors duration-200";
     const mobileClasses = "block px-3 py-2 rounded-md text-base font-medium";
     const desktopClasses = "px-3 py-2 rounded-md text-sm font-medium";
@@ -85,6 +126,66 @@ function NavItems({ mobile = false }: { mobile?: boolean }) {
                 >
                     {item.label}
                 </a>
+            ))}
+        </>
+    );
+}
+
+function NavItemsForDashBoard({ mobile = false, navItems }: { mobile?: boolean, navItems: NavItem[] }) {
+    const baseClasses = "text-gray-700 hover:text-black transition-colors duration-200";
+    const mobileClasses = "block px-3 py-2 rounded-md text-base font-medium";
+    const desktopClasses = "px-3 py-2 rounded-md text-sm font-medium";
+
+    return (
+        <>
+            {navItems.map((item) => (
+                <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`${baseClasses} ${mobile ? mobileClasses : desktopClasses}`}
+                >
+                    {item.label}
+                </Link>
+            ))}
+        </>
+    );
+}
+function NavItemsForResturant({ mobile = false, navItems }: { mobile?: boolean, navItems: NavItem[] }) {
+    const baseClasses = "text-gray-700 hover:text-black transition-colors duration-200";
+    const mobileClasses = "block px-3 py-2 rounded-md text-base font-medium";
+    const desktopClasses = "px-3 py-2 rounded-md text-sm font-medium";
+
+    return (
+        <>
+            {navItems.map((item) => (
+                <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`${baseClasses} ${mobile ? mobileClasses : desktopClasses}`}
+                >
+                    {item.label}
+                </Link>
+            ))}
+        </>
+    );
+}
+
+
+function NavItemsForReservation({ mobile = false, navItems }: { mobile?: boolean, navItems: NavItem[] }) {
+    const baseClasses = "text-gray-700 hover:text-black transition-colors duration-200";
+    const mobileClasses = "block px-3 py-2 rounded-md text-base font-medium";
+    const desktopClasses = "px-3 py-2 rounded-md text-sm font-medium";
+
+    return (
+        <>
+            {navItems.map((item) => (
+                <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`${baseClasses} ${mobile ? mobileClasses : desktopClasses}`}
+                >
+                    {item.label}
+                </Link>
             ))}
         </>
     );

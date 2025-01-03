@@ -10,16 +10,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
-import { Star, MapPin, DollarSign, Calendar as CalendarIcon, Clock } from 'lucide-react'
+import { Star, MapPin, DollarSign, CalendarIcon, Clock } from 'lucide-react'
 import { format } from 'date-fns'
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { useToast } from "@/hooks/use-toast"
 import { useRouter } from 'next/navigation'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export default function RestaurantPage() {
     const { id } = useParams()
-    const { toast } = useToast()
     const router = useRouter()
     const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
     const [selectedDate, setSelectedDate] = useState<Date>(new Date())
@@ -27,6 +35,11 @@ export default function RestaurantPage() {
     const [error, setError] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [userId, setUserId] = useState<string | null>(null)
+    const [alertDialog, setAlertDialog] = useState<{ isOpen: boolean; title: string; description: string }>({
+        isOpen: false,
+        title: '',
+        description: '',
+    })
 
     useEffect(() => {
         const auth = getAuth()
@@ -34,7 +47,7 @@ export default function RestaurantPage() {
             if (user) {
                 setUserId(user.uid)
             } else {
-                router.push('/login')
+                router.push('/auth/login')
             }
         })
 
@@ -84,22 +97,24 @@ export default function RestaurantPage() {
             if (!response.ok) {
                 throw new Error((await response.json()).message)
             }
+
             console.log(`Reserved`);
-            toast({
+            setAlertDialog({
+                isOpen: true,
                 title: "Reservation Confirmed",
                 description: `Your table has been reserved for ${format(selectedDate, 'PPP')} at ${timeSlot}`,
             })
-
+            
             const docRef = doc(db, "restaurants", id as string)
             const docSnap = await getDoc(docRef)
             if (docSnap.exists()) {
                 setRestaurant({ id: docSnap.id, ...docSnap.data() } as Restaurant)
             }
         } catch (error) {
-            toast({
+            setAlertDialog({
+                isOpen: true,
                 title: "Reservation Failed",
                 description: error instanceof Error ? error.message : 'Unknown error',
-                variant: "destructive",
             })
         } finally {
             setIsSubmitting(false)
@@ -201,7 +216,6 @@ export default function RestaurantPage() {
                                             >
                                                 {slot.time}
                                             </Button>
-
                                         ))}
                                     </div>
                                 </CardContent>
@@ -212,6 +226,20 @@ export default function RestaurantPage() {
                     )}
                 </div>
             </div>
+
+            <AlertDialog open={alertDialog.isOpen} onOpenChange={(isOpen) => setAlertDialog({ ...alertDialog, isOpen })}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {alertDialog.description}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogAction>OK</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }
