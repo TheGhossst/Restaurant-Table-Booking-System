@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/api/firebase';
 import { doc, runTransaction, collection, addDoc } from 'firebase/firestore';
 
+interface Table {
+  id: string;
+  seats: number;
+  status: 'available' | 'occupied';
+  reservations?: { date: string; time: string }[];
+}
+
+interface TimeSlot {
+  time: string;
+  status: string;
+}
+
 export async function POST(req: NextRequest) {
   const { restaurantId, tableId, userId, date, time } = await req.json();
 
@@ -23,7 +35,7 @@ export async function POST(req: NextRequest) {
       const tables = restaurantData.tables || [];
 
       // Find the index of the table
-      const tableIndex = tables.findIndex((t: any) => t.id === tableId);
+      const tableIndex = tables.findIndex((t: Table) => t.id === tableId);
 
       if (tableIndex === -1) {
         throw new Error('Table not found');
@@ -33,7 +45,7 @@ export async function POST(req: NextRequest) {
 
       // Find the index of the time slot
       const timeSlotIndex = table.timeSlots.findIndex(
-        (slot: any) => slot.time === time
+        (slot: TimeSlot) => slot.time === time
       );
 
       if (timeSlotIndex === -1) {
@@ -76,9 +88,18 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ message: 'Reservation made successfully' }, { status: 200 });
-  } catch (error: any) {
-    console.error('Error making reservation:', error.message);
-    const status = error.message.includes('not found') ? 404 : 400;
-    return NextResponse.json({ message: error.message }, { status });
+  } catch (error: unknown) {
+    console.error('Error making reservation:', error);
+
+    let message = 'An unexpected error occurred';
+    let status = 500;
+
+    if (typeof error === 'object' && error !== null && 'message' in error) {
+      const err = error as { message: string };
+      message = err.message;
+      status = err.message.includes('not found') ? 404 : 400;
+    }
+
+    return NextResponse.json({ message }, { status });
   }
 }

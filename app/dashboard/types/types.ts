@@ -27,6 +27,13 @@ export type OpeningHours = {
     [K in Day]: { open: string; close: string };
 };
 
+export interface Reservation {
+    id: string
+    restaurantId: string
+    date: string
+    time: string
+    tableId: string
+}
 
 export interface Booking {
     id: string;

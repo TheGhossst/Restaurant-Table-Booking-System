@@ -12,10 +12,21 @@ import { ReservationList } from './components/reservation-list'
 import { Calendar, Search } from 'lucide-react'
 import { motion } from 'framer-motion'
 
+interface Reservation {
+  id: string;
+  createdAt: string;
+  date: string;
+  restaurantId: string;
+  tableId: string;
+  time: string;
+  userId: string;
+}
+
+
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const [reservations, setReservations] = useState<any[]>([])
+  const [reservations, setReservations] = useState<Reservation[]>([])
   const router = useRouter()
 
   useEffect(() => {
@@ -33,15 +44,23 @@ export default function DashboardPage() {
   }, [router])
 
   const fetchReservations = async (userId: string) => {
-    const reservationsRef = collection(db, 'reservations')
-    const q = query(reservationsRef, where('userId', '==', userId))
-    const querySnapshot = await getDocs(q)
-    const reservationsData = querySnapshot.docs.map(doc => ({
+    const reservationsRef = collection(db, 'reservations');
+    const q = query(reservationsRef, where('userId', '==', userId));
+    const querySnapshot = await getDocs(q);
+    
+    const reservationsData: Reservation[] = querySnapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
-    }))
-    setReservations(reservationsData)
-  }
+      createdAt: doc.data().createdAt || '',
+      date: doc.data().date || '',
+      restaurantId: doc.data().restaurantId || '',
+      tableId: doc.data().tableId || '',
+      time: doc.data().time || '',
+      userId: doc.data().userId || '',
+    }));
+  
+    setReservations(reservationsData);
+  };
+  
 
   if (loading) {
     return <Loading />

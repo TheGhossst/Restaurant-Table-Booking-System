@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Loading } from '@/app/components/Loading'
 import { NotFound } from '@/app/components/Error'
+import Image from 'next/image';
 
 export default function RestaurantPage() {
     const { id } = useParams()
@@ -105,7 +106,7 @@ export default function RestaurantPage() {
                 title: "Reservation Confirmed",
                 description: `Your table has been reserved for ${format(selectedDate, 'PPP')} at ${timeSlot}`,
             })
-            
+
             const docRef = doc(db, "restaurants", id as string)
             const docSnap = await getDoc(docRef)
             if (docSnap.exists()) {
@@ -124,7 +125,7 @@ export default function RestaurantPage() {
 
     if (loading) return <Loading />
     if (error) return <div className="flex justify-center items-center min-h-screen text-red-500">Error: {error}</div>
-    if (!restaurant) return <NotFound  item = 'resturant'/>
+    if (!restaurant) return <NotFound item='resturant' />
 
     const today = format(new Date(), 'EEEE').toLowerCase()
     const currentHours = restaurant.openingHours[today]
@@ -133,7 +134,13 @@ export default function RestaurantPage() {
         <div className="container mx-auto px-4 py-8 ">
             <Card className="mt-16 mb-8">
                 <div className="h-64 overflow-hidden">
-                    <img src={restaurant.image} alt={restaurant.name} className="w-full h-full object-cover" />
+                    <Image
+                        src={restaurant.image}
+                        alt={restaurant.name}
+                        width={500}
+                        height={500}
+                        className="w-full h-full object-cover"
+                    />
                 </div>
                 <CardHeader>
                     <CardTitle className="text-3xl">{restaurant.name}</CardTitle>

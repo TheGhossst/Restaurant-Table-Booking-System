@@ -7,7 +7,6 @@ import * as z from 'zod'
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Table } from '../types/type'
 
 const bookingSchema = z.object({
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format'),
@@ -22,10 +21,9 @@ type BookingFormValues = z.infer<typeof bookingSchema>
 
 interface BookingFormProps {
     restaurantId: string
-    tables: Table[]
 }
 
-export default function BookingForm({ restaurantId, tables }: BookingFormProps) {
+export default function BookingForm({ restaurantId }: BookingFormProps) {
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     const form = useForm<BookingFormValues>({

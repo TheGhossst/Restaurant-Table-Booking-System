@@ -44,27 +44,33 @@ export default function LoginPage() {
             setTimeout(() => {
                 router.push('/dashboard');
             }, 2000);
-        } catch (error: any) {
-            switch (error.code) {
-                case 'auth/user-not-found':
-                    setError('No user found with this email address.');
-                    break;
-                case 'auth/wrong-password':
-                    setError('Incorrect password. Please try again.');
-                    break;
-                case 'auth/invalid-email':
-                    setError('Invalid email format. Please enter a valid email.');
-                    break;
-                case 'auth/user-disabled':
-                    setError('This account has been disabled. Contact support for assistance.');
-                    break;
-                case 'auth/too-many-requests':
-                    setError('Too many login attempts. Please try again later.');
-                    break;
-                default:
-                    setError('Failed to log in. Please try again later.');
+        } catch (error: unknown) {
+            if (typeof error === 'object' && error !== null && 'code' in error) {
+                const firebaseError = error as { code: string };
+                switch (firebaseError.code) {
+                    case 'auth/user-not-found':
+                        setError('No user found with this email address.');
+                        break;
+                    case 'auth/wrong-password':
+                        setError('Incorrect password. Please try again.');
+                        break;
+                    case 'auth/invalid-email':
+                        setError('Invalid email format. Please enter a valid email.');
+                        break;
+                    case 'auth/user-disabled':
+                        setError('This account has been disabled. Contact support for assistance.');
+                        break;
+                    case 'auth/too-many-requests':
+                        setError('Too many login attempts. Please try again later.');
+                        break;
+                    default:
+                        setError('Failed to log in. Please try again later.');
+                }
+            } else {
+                setError('An unexpected error occurred.');
             }
         }
+
     };
 
     const togglePasswordVisibility = () => {
@@ -139,7 +145,7 @@ export default function LoginPage() {
                         </div>
                     </form>
                     <p className="mt-2 text-center text-sm text-gray-600">
-                        Don't have an account?{' '}
+                        Don&apos;t have an account?{' '}
                         <Link href="/auth/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
                             Sign up
                         </Link>

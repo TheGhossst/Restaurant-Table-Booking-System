@@ -54,32 +54,39 @@ export default function SignupPage() {
             setTimeout(() => {
                 router.push('/dashboard')
             }, 3000)
-        } catch (error: any) {
-            handleFirebaseError(error)
+        } catch (error: unknown) {
+            handleFirebaseError(error);
         }
+
     }
 
-    const handleFirebaseError = (error: any) => {
-        switch (error.code) {
-            case 'auth/email-already-in-use':
-                setError('This email address is already in use. Please use another email or log in.')
-                break
-            case 'auth/invalid-email':
-                setError('The email address is invalid. Please enter a valid email.')
-                break
-            case 'auth/weak-password':
-                setError('Your password is too weak. Please use at least 6 characters.')
-                break
-            case 'auth/operation-not-allowed':
-                setError('Sign-up is currently disabled. Please contact support.')
-                break
-            case 'auth/network-request-failed':
-                setError('Network error. Please check your internet connection and try again.')
-                break
-            default:
-                setError('An unexpected error occurred. Please try again later.')
+    const handleFirebaseError = (error: unknown) => {
+        if (typeof error === 'object' && error !== null && 'code' in error) {
+            const firebaseError = error as { code: string };
+            switch (firebaseError.code) {
+                case 'auth/user-not-found':
+                    setError('No user found with this email address.');
+                    break;
+                case 'auth/wrong-password':
+                    setError('Incorrect password. Please try again.');
+                    break;
+                case 'auth/invalid-email':
+                    setError('Invalid email format. Please enter a valid email.');
+                    break;
+                case 'auth/user-disabled':
+                    setError('This account has been disabled. Contact support for assistance.');
+                    break;
+                case 'auth/too-many-requests':
+                    setError('Too many login attempts. Please try again later.');
+                    break;
+                default:
+                    setError('Failed to log in. Please try again later.');
+            }
+        } else {
+            setError('An unexpected error occurred.');
         }
-    }
+    };
+
 
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword)
@@ -98,7 +105,7 @@ export default function SignupPage() {
             ) : (
                 <div className="max-w-md w-full space-y-8 p-10 bg-gray-100 rounded-lg">
                     <div>
-                        <Link href = "/">
+                        <Link href="/">
                             <UtensilsCrossed className="w-12 h-12 mx-auto text-gray-700" />
                         </Link>
                         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">

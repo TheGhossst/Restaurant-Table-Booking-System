@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Star, MapPin, DollarSign } from 'lucide-react'
 import { Restaurant } from "../types/types"
+import Image from "next/image"
 
 interface RestaurantListProps {
     restaurants: Restaurant[]
@@ -15,7 +16,7 @@ export function RestaurantList({ restaurants }: RestaurantListProps) {
                 <Link href={`/restaurants/${restaurant.id}`} key={restaurant.id}>
                     <Card className="hover:shadow-lg transition-shadow overflow-hidden">
                         <div className="h-48 overflow-hidden">
-                            <img src={restaurant.image} alt={restaurant.name} className="w-full h-full object-cover transition-transform duration-300 hover:scale-110" />
+                            <Image src={restaurant.image} alt={restaurant.name} className="w-full h-full object-cover transition-transform duration-300 hover:scale-110" />
                         </div>
                         <CardHeader className="pb-2">
                             <CardTitle>{restaurant.name}</CardTitle>
