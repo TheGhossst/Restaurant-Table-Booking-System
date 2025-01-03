@@ -18,7 +18,6 @@ export interface Table {
     id: string;
     seats: number;
     status: 'available' | 'occupied';
-    reservations?: { date: string; time: string }[];
 }
 
 export type Day = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';

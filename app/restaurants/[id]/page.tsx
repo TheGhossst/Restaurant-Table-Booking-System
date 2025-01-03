@@ -1,144 +1,217 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { useParams } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { useState, useEffect } from 'react'
+import { useParams } from 'next/navigation'
+import { doc, getDoc } from 'firebase/firestore'
+import { getAuth, onAuthStateChanged } from 'firebase/auth'
+import { db } from '@/api/firebase'
+import { Restaurant, Table, TimeSlot } from '../types/type'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Restaurant, Table } from "../../dashboard/types/types"
-import { db } from "../../../api/firebase"
-import { doc, getDoc, collection, query, where, getDocs, updateDoc } from "firebase/firestore"
-import { Star, MapPin, DollarSign, Users } from 'lucide-react'
-import { Loading } from "../../components/Loading"
-import { Error, NotFound } from "../../components/Error"
+import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
+import { Star, MapPin, DollarSign, Calendar as CalendarIcon, Clock } from 'lucide-react'
+import { format } from 'date-fns'
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
+import { useToast } from "@/hooks/use-toast"
+import { useRouter } from 'next/navigation'
 
 export default function RestaurantPage() {
     const { id } = useParams()
+    const { toast } = useToast()
+    const router = useRouter()
     const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
-    const [tables, setTables] = useState<Table[]>([])
+    const [selectedDate, setSelectedDate] = useState<Date>(new Date())
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [userId, setUserId] = useState<string | null>(null)
 
     useEffect(() => {
-        const fetchRestaurantAndTables = async () => {
+        const auth = getAuth()
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                setUserId(user.uid)
+            } else {
+                router.push('/login')
+            }
+        })
+
+        return () => unsubscribe()
+    }, [router])
+
+    useEffect(() => {
+        const fetchRestaurant = async () => {
+            if (!userId) return
+
             try {
-                const restaurantDoc = await getDoc(doc(db, "restaurants", id as string))
-                if (restaurantDoc.exists()) {
-                    setRestaurant({ id: restaurantDoc.id, ...restaurantDoc.data() } as Restaurant)
+                const docRef = doc(db, "restaurants", id as string)
+                const docSnap = await getDoc(docRef)
+                if (docSnap.exists()) {
+                    setRestaurant({ id: docSnap.id, ...docSnap.data() } as Restaurant)
                 } else {
                     setError("Restaurant not found")
-                    return
                 }
-
-                const tablesQuery = query(collection(db, "tables"), where("restaurant_id", "==", id))
-                const tablesSnapshot = await getDocs(tablesQuery)
-                const fetchedTables = tablesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Table))
-                setTables(fetchedTables)
             } catch (err) {
-                console.error("Error fetching restaurant data:", err)
-                setError("Failed to load restaurant data. Please try again.")
+                console.error("Error fetching restaurant:", err)
+                setError("Failed to load restaurant data")
             } finally {
                 setLoading(false)
             }
         }
 
-        fetchRestaurantAndTables()
-    }, [id])
+        fetchRestaurant()
+    }, [id, userId])
 
-    const handleReserve = async (tableId: string) => {
+    const handleReservation = async (tableId: string, timeSlot: string) => {
+        if (isSubmitting || !userId) return
+        setIsSubmitting(true)
+
         try {
-            await updateDoc(doc(db, "tables", tableId), {
-                status: "occupied"
+            const response = await fetch('/api/reservations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    restaurantId: id,
+                    tableId,
+                    userId,
+                    date: format(selectedDate, 'yyyy-MM-dd'),
+                    time: timeSlot,
+                }),
             })
-            setTables(tables.map(table =>
-                table.id === tableId ? { ...table, status: "occupied" } : table
-            ))
-        } catch (err) {
-            console.error("Error reserving table:", err)
-            setError("Failed to reserve table. Please try again.")
+
+            if (!response.ok) {
+                throw new Error((await response.json()).message)
+            }
+            console.log(`Reserved`);
+            toast({
+                title: "Reservation Confirmed",
+                description: `Your table has been reserved for ${format(selectedDate, 'PPP')} at ${timeSlot}`,
+            })
+
+            const docRef = doc(db, "restaurants", id as string)
+            const docSnap = await getDoc(docRef)
+            if (docSnap.exists()) {
+                setRestaurant({ id: docSnap.id, ...docSnap.data() } as Restaurant)
+            }
+        } catch (error) {
+            toast({
+                title: "Reservation Failed",
+                description: error instanceof Error ? error.message : 'Unknown error',
+                variant: "destructive",
+            })
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
-    if (loading) {
-        return <Loading />
-    }
+    if (loading) return <div className="flex justify-center items-center min-h-screen">Loading...</div>
+    if (error) return <div className="flex justify-center items-center min-h-screen text-red-500">Error: {error}</div>
+    if (!restaurant) return <div className="flex justify-center items-center min-h-screen">Restaurant not found</div>
 
-    if (error) {
-        return <Error message={error} />
-    }
-
-    if (!restaurant) {
-        return <NotFound item="Restaurant" />
-    }
+    const today = format(new Date(), 'EEEE').toLowerCase()
+    const currentHours = restaurant.openingHours[today]
 
     return (
-        <div className="min-h-screen">
-            <main className="container mx-auto px-4 py-8">
-                <Card className="mb-8 overflow-hidden">
-                    <div className="h-64 md:h-96 overflow-hidden relative">
-                        <img src={restaurant.image} alt={restaurant.name} className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                            <h2 className="text-4xl md:text-5xl font-bold text-white text-center">{restaurant.name}</h2>
-                        </div>
+        <div className="container mx-auto px-4 py-8">
+            <Card className="mt-16 mb-8">
+                <div className="h-64 overflow-hidden">
+                    <img src={restaurant.image} alt={restaurant.name} className="w-full h-full object-cover" />
+                </div>
+                <CardHeader>
+                    <CardTitle className="text-3xl">{restaurant.name}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center mb-4">
+                        <Star className="w-6 h-6 text-yellow-400 mr-2" />
+                        <span className="font-bold text-xl mr-4">{restaurant.rating}</span>
+                        <Badge variant="outline" className={cn(
+                            restaurant.status === "busy" ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
+                        )}>
+                            {restaurant.status === "busy" ? "Busy" : "Available"}
+                        </Badge>
                     </div>
-                    <CardContent className="p-6">
-                        <div className="flex items-center mb-4">
-                            <Star className="w-6 h-6 text-yellow-400 mr-2" />
-                            <span className="text-2xl font-bold mr-2">{restaurant.rating}</span>
-                            <Badge
-                                variant="outline"
-                                className={restaurant.status === "busy" ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"}
-                            >
-                                {restaurant.status === "busy" ? "Busy" : "Available"}
-                            </Badge>
-                        </div>
-                        <div className="flex items-center text-gray-600 mb-2">
-                            <MapPin className="w-5 h-5 mr-2" />
-                            <span>{restaurant.location}</span>
-                        </div>
-                        <div className="flex items-center text-gray-600 mb-4">
-                            <DollarSign className="w-5 h-5 mr-2" />
-                            <span>{restaurant.price}</span>
-                        </div>
-                        <div className="flex flex-wrap gap-2 mb-4">
+                    <div className="flex items-center text-gray-600 mb-4">
+                        <MapPin className="w-5 h-5 mr-2" />
+                        <span>{restaurant.location}</span>
+                    </div>
+                    <div className="flex items-center text-gray-600 mb-4">
+                        <DollarSign className="w-5 h-5 mr-2" />
+                        <span>{restaurant.price}</span>
+                    </div>
+                    <div className="flex items-center text-gray-600 mb-4">
+                        <Clock className="w-5 h-5 mr-2" />
+                        <span>Today: {currentHours.open} - {currentHours.close}</span>
+                    </div>
+                    <div className="mb-4">
+                        <h3 className="font-semibold mb-2">Features:</h3>
+                        <div className="flex flex-wrap gap-2">
                             {restaurant.features.map((feature) => (
-                                <Badge key={feature} variant="secondary" className="bg-blue-100 text-blue-800">
+                                <Badge key={feature} variant="secondary">
                                     {feature}
                                 </Badge>
                             ))}
                         </div>
-                        <p className="text-gray-700 mb-6">{restaurant.description}</p>
-                    </CardContent>
-                </Card>
+                    </div>
+                    <p className="text-gray-700">{restaurant.description}</p>
+                </CardContent>
+            </Card>
 
-                <h2 className="text-2xl font-bold mb-4 text-gray-800">Available Tables</h2>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {tables.map((table) => (
-                        <Card key={table.id} className="overflow-hidden">
-                            <CardContent className="p-4">
-                                <div className="flex items-center mb-2">
-                                    <Users className="w-5 h-5 mr-2 text-blue-600" />
-                                    <span className="font-bold text-gray-800">{table.seats} Seats</span>
-                                </div>
-                                <Badge
-                                    variant="outline"
-                                    className={table.status === "available" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
-                                >
-                                    {table.status}
-                                </Badge>
-                                {table.status === "available" && (
-                                    <Button
-                                        className="mt-4 w-full bg-purple-500 hover:bg-purple-400 transition-colors"
-                                        onClick={() => handleReserve(table.id)}
-                                    >
-                                        Reserve
-                                    </Button>
-                                )}
-                            </CardContent>
-                        </Card>
-                    ))}
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-4">Select Date</h2>
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-[280px]">
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {selectedDate ? format(selectedDate, 'PPP') : <span>Pick a date</span>}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                        <Calendar
+                            mode="single"
+                            selected={selectedDate}
+                            onSelect={(date) => date && setSelectedDate(date)}
+                            initialFocus
+                            disabled={(date) => date < new Date()}
+                        />
+                    </PopoverContent>
+                </Popover>
+            </div>
+
+            <div>
+                <h2 className="text-2xl font-bold mb-4">Available Tables</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {restaurant.tables && restaurant.tables.length > 0 ? (
+                        restaurant.tables.map((table: Table) => (
+                            <Card key={table.id}>
+                                <CardHeader>
+                                    <CardTitle>Table {table.id}</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <p>Seats: {table.seats}</p>
+                                    <h4 className="font-semibold mt-2">Time Slots:</h4>
+                                    <div className="grid grid-cols-2 gap-2 mt-2">
+                                        {table.timeSlots.map((slot: TimeSlot) => (
+                                            <Button
+                                                key={slot.time}
+                                                variant={slot.status === 'available' ? 'outline' : 'destructive'}
+                                                disabled={slot.status !== 'available' || isSubmitting}
+                                                onClick={() => handleReservation(table.id, slot.time)}
+                                            >
+                                                {slot.time}
+                                            </Button>
+
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))
+                    ) : (
+                        <p>No tables available for this restaurant.</p>
+                    )}
                 </div>
-            </main>
+            </div>
         </div>
     )
 }

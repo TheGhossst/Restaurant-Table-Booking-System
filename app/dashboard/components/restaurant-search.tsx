@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RestaurantList } from "./restaurant-list";
 import { Restaurant } from "../types/types";
-import { db } from "../../../api/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/api/firebase";
+import { collection, query, where, getDocs, limit, Query, DocumentData } from "firebase/firestore";
 import { Search, MapPin } from 'lucide-react';
 
 export default function RestaurantSearch() {
@@ -21,10 +21,10 @@ export default function RestaurantSearch() {
     useEffect(() => {
         const fetchLocations = async () => {
             try {
-                const locationsRef = collection(db, "locations");
-                const querySnapshot = await getDocs(locationsRef);
+                const restaurantsRef = collection(db, "restaurants");
+                const querySnapshot = await getDocs(query(restaurantsRef, limit(1000)));
 
-                const fetchedLocations = querySnapshot.docs.map((doc) => doc.data().name);
+                const fetchedLocations = Array.from(new Set(querySnapshot.docs.map((doc) => doc.data().location)));
                 setLocations(fetchedLocations);
             } catch (err) {
                 console.error("Error fetching locations:", err);
@@ -41,26 +41,27 @@ export default function RestaurantSearch() {
         setError(null);
 
         try {
-            const restaurantsCollection = collection(db, "restaurants");
-            let locationQuerySnapshot;
+            const restaurantsRef = collection(db, "restaurants");
+            let restaurantQuery: Query<DocumentData> = query(restaurantsRef);
+
             if (location.trim()) {
-                const locationQuery = query(restaurantsCollection, where("location", "==", location));
-                locationQuerySnapshot = await getDocs(locationQuery);
-            } else {
-                locationQuerySnapshot = await getDocs(restaurantsCollection);
+                restaurantQuery = query(restaurantQuery, where("location", "==", location));
             }
 
-            const fetchedRestaurants: Restaurant[] = locationQuerySnapshot.docs.map((doc) => ({
+            if (restaurantName.trim()) {
+                restaurantQuery = query(restaurantQuery, where("name", ">=", restaurantName), where("name", "<=", restaurantName + '\uf8ff'));
+            }
+
+            const querySnapshot = await getDocs(restaurantQuery);
+
+            const fetchedRestaurants: Restaurant[] = querySnapshot.docs.map((doc) => ({
                 id: doc.id,
                 ...doc.data(),
-            })) as Restaurant[];
-
-            // Perform client-side filtering for partial name matches
-            const filteredRestaurants = fetchedRestaurants.filter((restaurant) =>
+            } as Restaurant)).filter(restaurant => 
                 restaurant.name.toLowerCase().includes(restaurantName.toLowerCase())
             );
 
-            setRestaurants(filteredRestaurants);
+            setRestaurants(fetchedRestaurants);
         } catch (err) {
             console.error("Error fetching restaurants:", err);
             setError("Failed to fetch restaurants. Please try again.");

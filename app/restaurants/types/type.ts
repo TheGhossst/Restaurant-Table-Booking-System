@@ -17,15 +17,15 @@ export interface Restaurant {
 export interface Table {
     id: string;
     seats: number;
-    status: 'available' | 'occupied';
-    reservations?: { date: string; time: string }[];
+    timeSlots: TimeSlot[];
 }
 
-export type Day = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+export interface TimeSlot {
+    time: string; // e.g., "08:00", "09:00"
+    status: 'available' | 'occupied';
+}
 
-export type OpeningHours = {
-    [K in Day]: { open: string; close: string };
-};
+
 
 
 export interface Booking {
@@ -51,3 +51,9 @@ export type TableStatus = 'available' | 'occupied';
 
 export type Location = 'Kumarapuram' | 'Medical College' | 'Pattom' | 'Panampilly Nagar' | 'Alappuzha' | 'Cochin' | 'Vyttila' | 'Edapally' | 'Fort Kochi' | 'Kochi';
 
+
+export type Day = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+
+export type OpeningHours = {
+    [K in Day]: { open: string; close: string };
+};
