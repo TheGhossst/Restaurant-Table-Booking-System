@@ -16,7 +16,7 @@ export function RestaurantList({ restaurants }: RestaurantListProps) {
                 <Link href={`/restaurants/${restaurant.id}`} key={restaurant.id}>
                     <Card className="hover:shadow-lg transition-shadow overflow-hidden">
                         <div className="h-48 overflow-hidden">
-                            <Image src={restaurant.image} alt={restaurant.name} className="w-full h-full object-cover transition-transform duration-300 hover:scale-110" />
+                            <Image src={restaurant.image}  width = {400} height = {300} alt={restaurant.name} className="w-full h-full object-cover transition-transform duration-300 hover:scale-110" />
                         </div>
                         <CardHeader className="pb-2">
                             <CardTitle>{restaurant.name}</CardTitle>
